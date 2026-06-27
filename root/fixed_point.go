@@ -1,4 +1,4 @@
-package fixed_point
+package root
 
 import (
 	"errors"
@@ -17,9 +17,4 @@ func Fixed_point(p_old float64, n0 int, TOL float64, f func(float64) float64) (f
 		p_old = p_new
 	}
 	return 0, errors.New("reached max iterations")
-}
-
-func round(val float64, places int) float64 {
-	shift := math.Pow(10, float64(places))
-	return math.Round(val*shift) / shift
 }

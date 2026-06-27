@@ -5,9 +5,36 @@ import (
 	"math"
 )
 
-func Gauss(A0 [][]int, b []int) []int {
+func GaussElimination(origA [][]float64, origB []float64) []float64 {
+	A0 := make([][]float64, len(origA))
+	b := make([]float64, len(origB))
+	for i, _ := range origA {
+		A0[i] = make([]float64, len(origA[i]))
+		copy(A0[i], origA[i])
+	}
+	copy(b, origB)
+	fmt.Println("A0 = ", A0)
+	fmt.Println("b = ", b)
 	n := len(A0)
 	for i := range n - 1 {
+		// if A0[i][i] == 0, then swap with some row
+		if A0[i][i] == 0 {
+			for j := i + 1; j < n; j++ {
+				// find row that doens't have zero as the values to divide
+				if A0[j][i] != 0 {
+					// fmt.Printf("swapping on index A0[%d] and A0[%d] value: %f %f\n", j, i, A0[j][i], A0[i][i])
+					tmpA := A0[j]
+					A0[j] = A0[i]
+					A0[i] = tmpA
+
+					tmpB := b[j]
+					b[j] = b[i]
+					b[i] = tmpB
+				}
+			}
+		}
+		// fmt.Println("A0 = ", A0)
+
 		for j := i + 1; j < n; j++ {
 			m := A0[j][i] / A0[i][i]
 			for k := range n {
@@ -15,9 +42,11 @@ func Gauss(A0 [][]int, b []int) []int {
 			}
 			b[j] = b[j] - m*b[i]
 		}
+		// fmt.Println("A0 = ", A0)
 	}
 
-	x := make([]int, n)
+	// back substitution
+	x := make([]float64, n)
 	for i := n - 1; i >= 0; i-- {
 		right := b[i]
 		for j := i + 1; j < n; j++ {

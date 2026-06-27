@@ -1,4 +1,4 @@
-package main
+package root
 
 import (
 	"errors"
@@ -22,9 +22,4 @@ func secant(p0 float64, n0 int, TOL float64, p1 float64, f func(float64) float64
 		q1 = f(p)
 	}
 	return 0, errors.New("reached max iterations")
-}
-
-func round(val float64, places int) float64 {
-	shift := math.Pow(10, float64(places))
-	return math.Round(val*shift) / shift
 }

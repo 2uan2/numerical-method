@@ -1,121 +1,116 @@
 package ode
 
-import "fmt"
+import (
+	"algorithms/interpolation"
+	"fmt"
+	"math"
+)
 
-func Midpoint(f func(a float64, b float64) float64, x0 float64, y0 float64, h float64, step int) (float64, float64) {
+func Midpoint(f func(a, b float64) float64, x0, y0, h float64, step int) (float64, float64) {
 	xCur := x0
 	yCur := y0
 	var xMid float64
 	var yMid float64
-	// fmt.Println("xCur: ", xCur)
-	// fmt.Println("yCur: ", yCur)
-	// fmt.Println("====")
 
 	for range step {
 		yMid = yCur + (h/2)*f(xCur, yCur)
 		xMid = xCur + h/2
-		// fmt.Println("xMid: ", xMid)
-		// fmt.Println("yMid: ", yMid)
 		yCur = yCur + h*f(xMid, yMid)
 		xCur = xCur + h
 		fmt.Printf("y(%f) = %f\n", xCur, yCur)
-		// fmt.Println("xCur: ", xCur)
-		// fmt.Println("yCur: ", yCur)
-		// fmt.Println("====")
 	}
 
 	return xCur, yCur
 }
 
-func Heun(f func(a float64, b float64) float64, x0 float64, y0 float64, h float64, step int) (float64, float64) {
-	xCur := x0
-	yCur := y0
-	var yPred float64
-	var yCor float64
+func MidPointSystem(fs []func(args ...float64) float64, x float64, initials []float64, h float64, step int) []float64 {
+	return []float64{}
+}
+
+func RungeKuttaSystem(fs []func(args ...float64) float64, x float64, initials []float64, h float64, step int) []float64 {
+	xCur := x
+	zCur := initials
+	zNew := make([]float64, len(initials))
+	xAmount := len(initials) - len(fs)
 	for range step {
-		yPred = yCur + h*f(xCur, yCur)
-		yCor = yCur + h/2*(f(xCur, yCur)+f(xCur+h, yPred))
-		xCur = xCur + h
-		yCur = yCor
+		for i, f := range fs {
+			k1 := f(zCur...)
+			k2Args := make([]float64, len(zCur))
+			k2Args[0] = zCur[0] + h
+			for i := 1; i < len(zCur); i++ {
+				k2Args[i] = zCur[i] + h*k1
+			}
+			k2 := f(k2Args...)
 
-		// fmt.Println("xCur: ", xCur)
-		// fmt.Println("yCur: ", yCur)
-		fmt.Printf("y(%f) = %f\n", xCur, yCur)
-		fmt.Println("====")
+			zNew[i+xAmount] = zCur[i+xAmount] + h/2.0*(k1+k2)
+		}
+
+		for i := range initials {
+			zCur[i] = zNew[i]
+		}
+		xCur = xCur + h
+		if xAmount >= 1 {
+			zCur[0] = xCur
+		}
+		fmt.Printf("Z[%f] = %v\n", xCur, zCur)
 	}
-	return xCur, yCur
+
+	return zCur
 }
 
-func RungeKutta2(f func(a float64, b float64) float64, x0 float64, y0 float64, h float64, alpha float64, step int) (float64, float64) {
-	xCur := x0
-	yCur := y0
-	var k1 float64
-	var k2 float64
+func EulerSystem(fs []func(args ...float64) float64, x float64, initials []float64, h float64, step int) []float64 {
+	xCur := x
+	zCur := initials
+	zNew := make([]float64, len(initials))
+	xAmount := len(initials) - len(fs)
 	for range step {
-		k1 = h * f(xCur, yCur)
-		k2 = h * f(xCur+alpha*h, yCur+alpha*k1)
-		// k2 = yCur + h/2*(f(xCur, yCur)+f(xCur+h, k1))
-		xCur = xCur + h
-		yCur = yCur + (1.0-1.0/(2.0*alpha))*k1 + (1.0/(2.0*alpha))*k2
+		for i, f := range fs {
+			zNew[i+xAmount] = zCur[i+xAmount] + h*f(zCur...)
+		}
 
-		// fmt.Println("xCur: ", xCur)
-		// fmt.Println("yCur: ", yCur)
-		fmt.Printf("y(%f) = %f\n", xCur, yCur)
-		fmt.Println("====")
+		for i := range initials {
+			zCur[i] = zNew[i]
+		}
+		xCur = xCur + h
+		if xAmount >= 1 {
+			zCur[0] = xCur
+		}
+		fmt.Printf("Z[%f] = %v\n", xCur, zCur)
 	}
-	return xCur, yCur
+
+	return zCur
 }
 
-func RungeKutta3(f func(a float64, b float64) float64, x0 float64, y0 float64, h float64, step int) (float64, float64) {
-	xCur := x0
-	yCur := y0
-	var k1 float64
-	var k2 float64
-	var k3 float64
-	for range step {
-		k1 = f(xCur, yCur)
-		k2 = f(xCur+h/2, yCur+(k1*h)/2)
-		k3 = f(xCur+h, yCur-(k1*h)+2*k2*h)
-		// k2 = yCur + h/2*(f(xCur, yCur)+f(xCur+h, k1))
-		xCur = xCur + h
-		yCur = yCur + h/6.0*(k1+4.0*k2+k3)
+func Shooting(fs []func(args ...float64) float64, xStart, xEnd float64, ys []float64, h float64, step int) []float64 {
+	threshold := 0.01
+	yActual := ys[len(ys)-1]
+	// ys[1] = ys[len(ys)-2]
+	ys[len(ys)-1] = ys[len(ys)-2]
+	xGuesses := make([]float64, 0)
+	yGuesses := make([]float64, 0)
 
-		fmt.Printf("y(%f) = %f\n", xCur, yCur)
-		fmt.Println("====")
+	for i := range step {
+		stepAmount := (xEnd - xStart) / h
+		guessBoundary := RungeKuttaSystem(fs, xStart, ys, h, int(stepAmount))
+		fmt.Println(guessBoundary)
+		if math.Abs(guessBoundary[1]-yActual) < threshold {
+			break
+		}
+		// first step
+		if i == 0 {
+			xGuesses = append(xGuesses, float64(i))
+			yGuesses = append(yGuesses, guessBoundary[1])
+			ys[len(ys)-1] = ys[len(ys)-1] + 1
+		} else if i == 1 {
+			xGuesses = append(xGuesses, float64(i))
+			yGuesses = append(yGuesses, guessBoundary[1])
+			ys[len(ys)-1] = interpolation.GeneralLagrange2D(yActual, yGuesses, xGuesses)
+			fmt.Println("ys: ", ys)
+		} else {
+
+		}
+
 	}
-	return xCur, yCur
+
+	return []float64{}
 }
-
-func RungeKutta4(f func(a float64, b float64) float64, x0 float64, y0 float64, h float64, step int) (float64, float64) {
-	xCur := x0
-	yCur := y0
-	var k1 float64
-	var k2 float64
-	var k3 float64
-	var k4 float64
-	for range step {
-		k1 = f(xCur, yCur)
-		k2 = f(xCur+h/2, yCur+(k1*h)/2)
-		k3 = f(xCur+h/2, yCur+(k2*h)/2)
-		k4 = f(xCur+h, yCur+k3*h)
-		xCur = xCur + h
-		yCur = yCur + h/6.0*(k1+2.0*k2+2.0*k3+k4)
-
-		fmt.Printf("y(%f) = %f\n", xCur, yCur)
-		fmt.Println("====")
-	}
-	return xCur, yCur
-}
-
-// func RungeKuttaSystem(fs []func(args ...float64) float64, x float64, initials []float64, h float64, step int) (float64, float64) {
-// 	xCur := x
-// 	zCur := initials
-// 	zNew := make([]float64, len(initials))
-// 	for range step {
-// 		f := fs[0]
-// 		zNew[0] = zCur[0] + h*f(initials...)
-//
-// 	}
-//
-// 	return 1.0, 2.0
-// }

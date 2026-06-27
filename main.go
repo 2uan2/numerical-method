@@ -1,12 +1,10 @@
 package main
 
 import (
-	// "algorithms/newton"
-	// "algorithms/interpolation"
-
-	"algorithms/ode"
+	"algorithms/interpolation"
 	"fmt"
 	"math"
+	"slices"
 )
 
 var (
@@ -29,6 +27,7 @@ func c(t float64) float64 {
 }
 
 func main() {
+	// gause seidel and stuff
 	// A0 := [][]int{
 	// 	{2, 1, 1, 0},
 	// 	{4, 3, 3, 1},
@@ -63,17 +62,60 @@ func main() {
 	// xs := []float64{0.0, 0.2, 0.4, 0.6, 0.8, 1.0}
 	// ys := []float64{0.0, 0.2227, 0.4284, 0.6039, 0.7422, 0.8426}
 	// fmt.Println(interpolation.GeneralLagrange(0.33, xs, ys))
-	var x0 float64 = 0
-	var y0 float64 = 0.5
-	h := 0.2
-	f := func(x float64, y float64) float64 {
-		// return 1.0 + math.Pow(x, 2) + y
-		// return 1 + math.Pow(y, 2) + math.Pow(x, 3)
-		return 1 + y + math.Pow(x, 2)
-	}
 
-	// fmt.Println(ode.Heun(f, x0, y0, h, 3))
-	fmt.Println(ode.RungeKutta4(f, x0, y0, h, 3))
+	// runge kutta and other first order ODE
+	// var x0 float64 = 0
+	// var y0 float64 = 2.0
+	// h := 0.1
+	// f := func(x float64, y float64) float64 {
+	// 	// return 1.0 + math.Pow(x, 2) + y
+	// 	// return 1 + math.Pow(y, 2) + math.Pow(x, 3)
+	// 	// return 1 + y + math.Pow(x, 2)
+	// 	return 2*x + math.Pow(y, 2)*x
+	// }
+	// // fmt.Println(ode.Heun(f, x0, y0, h, 3))
+	// x1, y1 := ode.Heun(f, x0, y0, h, 1)
+	// fmt.Println("   	 2.5831917308068606")
+	// for i := range 10 {
+	// 	_, y := ode.HeunMultistep(f, x0, y0, x1, y1, h, 3, i)
+	// 	fmt.Printf("k = %d -> %.16f\n", i, y) // 2.5831917308068606
+	// }
+	// fmt.Println(ode.RungeKutta4(f, x0, y0, h, 3))
+
+	// ODE system
+	// fs := make([]func(args ...float64) float64, 2)
+	// fs[0] = func(args ...float64) float64 {
+	// 	return args[2]
+	// 	// t := args[0]
+	// 	// return 3*args[1] + 2*args[2] - (math.Pow(t, 2)*2+1)*math.Pow(math.E, 2*t)
+	// }
+	// fs[1] = func(args ...float64) float64 {
+	// 	return 4 * (args[1] - args[0])
+	// 	// t := args[0]
+	// 	// return 4*args[1] + args[2] + (math.Pow(t, 2)+2*t-4)*math.Pow(math.E, 2*t)
+	// }
+	// x: args[0], y: args[1], y': args[2]
+	// fs[2] = func(args ...float64) float64 {
+	// 	return -5*args[2] - 2*args[1] - 8*args[3]
+	// }
+	// fs[3] = func(args ...float64) float64 {
+	// 	return args[4]
+	// }
+	// fs[4] = func(args ...float64) float64 {
+	// 	return 2 - args[1] - 2*args[0]*args[3]
+	// }
+	// x0 := 0.0
+	// first x0 is just x
+	// x0 := 0.0
+	// x1 := 1.0
+	// vars := []float64{0.0, 0.0, 2.0000}
+	// h := 0.01
+
+	// fmt.Println(ode.RungeKuttaSystem(fs, x0, vars, h, 3))
+	// fmt.Println(ode.Shooting(fs, x0, x1, vars, h, 2))
+	// fmt.Println(interpolation.GeneralLagrange2DContinuous([]float64{-0.7688, 0.99}, []float64{0, 1}, 0.1))
+
+	// interpolation with lagrange type shi
 	// cur_max := 0.0
 	// max_day := 0
 	// for i := 0.0; i < 28.0; i++ {
@@ -84,6 +126,39 @@ func main() {
 	// }
 	// fmt.Println(cur_max)
 	// fmt.Println(max_day)
+	points := []interpolation.Point2D{{1.0, 2.0}, {2.0, 4.5}, {3.0, 5.0}, {5.0, 3.0}, {3.0, 2.0}}
+	// f := interpolation.Spline(points)
+	// fmt.Println(f(t))
+	xs := slices.Collect(func(yield func(float64) bool) {
+		for _, point := range points {
+			if !yield(point[0]) {
+				return
+			}
+		}
+	})
+	ys := slices.Collect(func(yield func(float64) bool) {
+		for _, point := range points {
+			if !yield(point[1]) {
+				return
+			}
+		}
+	})
+	fX := interpolation.CatmullRomSpline(xs)
+	fmt.Println("done")
+	fY := interpolation.CatmullRomSpline(ys)
+	// t := 1.0
+	for t := 0.0; t < 4.0; t += 0.1 {
+		fmt.Println(t, fX(t), fY(t))
+	}
+
+	// A0 := [][]float64{
+	// 	{-3, 2, -1},
+	// 	{6, -6, 7},
+	// 	{3, -4, 4},
+	// }
+	// b := []float64{-1, -7, -6}
+	// fmt.Println(gauss.GaussElimination(A0, b))
+
 }
 
 // f0 ⫽ f (0) ⫽ 1, f1 ⫽ f (2) ⫽ 9, f2 ⫽ f (4) ⫽ 41,
